@@ -1,0 +1,13 @@
+bin/
+*.o
+*.exe
+*.swp
+*.swo
+*.a
+*.tmp
+*.zip
+*.out
+*.bmp
+\\
+\\\\
+
