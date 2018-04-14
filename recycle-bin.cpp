@@ -25,7 +25,6 @@
 #include <vector>
 #include <regex>
 
-
 #define TRASHBIN_VERSION "v0.3"
 
 #define TRASHBIN_FILE_PARAM          0
@@ -35,6 +34,10 @@
 #define TRASHBIN_SWITCH_INTERACTIVE  3333
 #define TRASHBIN_SWITCH_HELP         44444
 #define TRASHBIN_SWITCH_VERSION      555555
+
+#ifndef VERBOSITY
+#define VERBOSITY 0
+#endif
 
 #define REGEX_HDD_START  L"(?:(?:(?:/[a-z])|(?:[a-z]:))[/\\\\]*)"
 #define REGEX_HDD_SPECIFIC( let ) L"(?:(?:(?:/" let ")|(?:" let ":))[/\\\\]*)"
@@ -50,10 +53,6 @@ static const std::wregex Protected_Regex_Match = std::wregex(
 );
 
 static const std::wregex Protected_Regex_Search = std::wregex();
-
-// Test case:
-// /r/ r: r:\\ /r foo /r/usersa/ /r/file /r/users /r/users/nyan/haha /e/kaka/
-
 
 void printVersion(){
     std::cout << "Paranoid-RM "<< TRASHBIN_VERSION <<" by Gryllotronics.\n";
@@ -121,10 +120,26 @@ int get_param_type( const wchar_t* st )
     // Not argument - file.
     return TRASHBIN_FILE_PARAM;
 }
-/*
+
+// Prints a string formatted, with Zeroes intact.
+void printDeletionString( const wchar_t* start, const wchar_t* end )
+{
+    for( const wchar_t* it = start; it <= end; ++it ){
+        if( *it == (wchar_t)0x0000 )
+            std::wcout << L"0";
+        std::wcout << *it;
+    }
+    std::wcout << L"\n";
+
+    //size_t totalLen = (size_t)(end - start);
+    //std::cout.write( (const char*)start, totalLen * sizeof(wchar_t) );
+    //std::wcout << L"\n";
+}
+
 // Removes a string of files Win-Style.
 #ifndef TRASHBIN_TEST
-int RemoveFiles( const wchar_t* from )
+
+/*int RemoveFiles( const wchar_t* from )
 {
     SHFILEOPSTRUCTW op;
 
@@ -137,14 +152,24 @@ int RemoveFiles( const wchar_t* from )
 
     // Call the file operation function. Return value is 0 if good, ERRCODE if bad.
     return SHFileOperationW( &op ); 
-}
-#endif // TRASHBIN_TEST
-*/
+}*/
 
-int process_recycle(int argc, wchar_t **argv) 
+int RemoveFiles( const wchar_t* from ){
+    return 0;
+}
+
+#else
+
+extern int test_main();
+extern int RemoveFiles( const wchar_t* from );
+
+#endif // TRASHBIN_TEST
+
+
+int process_recycle( int argc, const wchar_t** argv) 
 {
-    const bool printIndividualFiles = false;
-    const bool printFormatString    = true;
+    const bool printIndividualFiles = ( VERBOSITY >= 2 );
+    const bool printFormatString    = ( VERBOSITY >= 1 );
 
     if( argc == 1 ){
         printHelp();
@@ -227,33 +252,19 @@ int process_recycle(int argc, wchar_t **argv)
 
     // Debugging verbosity
     if( printFormatString ){    
-        std::wcout << L"\n";
-        for( const wchar_t* it = &buffer[0]; it <= currPtr; ++it ){
-            if( *it == (wchar_t)0x0000 )
-                std::wcout << L"0";
-            std::wcout << *it;
-        }
-        std::wcout << L"\n";
-
-        //size_t totalLen = (size_t)(currPtr - &buffer[0]);
-        //std::cout.write( (char*)( &buffer[0] ), totalLen * sizeof(wchar_t) );
-        //std::wcout << L"\n";
+        printDeletionString( &buffer[0], currPtr );
     }
 
-    return 0;
+    return RemoveFiles( &buffer[0] );
 }
 
-#ifdef TRASHBIN_TEST
-extern int test_main();
-#endif
-
 // Main function. Calls test if specified.
-int wmain( int argc, wchar_t **argv ) 
+int wmain( int argc, wchar_t** argv ) 
 {
     #ifdef TRASHBIN_TEST
         return test_main();
     #else
-        return process_recycle( argc, argv );
+        return process_recycle( argc, (const wchar_t**)argv );
     #endif 
 }
 

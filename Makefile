@@ -1,19 +1,18 @@
-CXX := g++
+CXX 	 := g++
 CXXFLAGS := -O2 -std=c++14
-LDFLAGS := -municode
+LDFLAGS  := -municode
 
 PROGNAME := trashbin
-PROGRAM := bin/$(PROGNAME)
+PROGRAM  := bin/$(PROGNAME)
+TESTGRAM := bin/test_$(PROGNAME)
 
-SRC := recycle-bin.cpp
+SRC 	:= recycle-bin.cpp
 TESTSRC := test.cpp
 
-all: release
-release: $(PROGRAM)
+all: $(PROGRAM)
 
-test: testops $(PROGRAM)
-testops: 
-	$(eval SRC += $(TESTSRC) )
+tests: testops $(TESTGRAM)
+testops:
 	$(eval CXXFLAGS += -DTRASHBIN_TEST )
 
 .cpp.o:
@@ -22,6 +21,10 @@ testops:
 $(PROGRAM): $(SRC:.cpp=.o)
 	$(CXX) $(LDFLAGS) -o $@ $^
 
+$(TESTGRAM): $(TESTSRC:.cpp=.o) $(SRC:.cpp=.o)
+	$(CXX) $(LDFLAGS) -o $@ $^
+
 clean:
 	$(RM) *.o
+
 
