@@ -136,10 +136,13 @@ void printDeletionString( const wchar_t* start, const wchar_t* end )
     //std::wcout << L"\n";
 }
 
-// Removes a string of files Win-Style.
 #ifndef TRASHBIN_TEST
 
-/*int RemoveFiles( const wchar_t* from )
+// Windows function declarations.
+#include <windows.h>
+
+// Removes a string of files Win-Style.
+int RemoveFiles( const wchar_t* from )
 {
     SHFILEOPSTRUCTW op;
 
@@ -152,11 +155,11 @@ void printDeletionString( const wchar_t* start, const wchar_t* end )
 
     // Call the file operation function. Return value is 0 if good, ERRCODE if bad.
     return SHFileOperationW( &op ); 
-}*/
-
-int RemoveFiles( const wchar_t* from ){
-    return 0;
 }
+
+/*int RemoveFiles( const wchar_t* from ){
+    return 0;
+}*/
 
 #else
 
