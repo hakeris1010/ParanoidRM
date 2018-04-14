@@ -23,7 +23,7 @@
 #include <windows.h>
 #include <cassert>
 #include <vector>
-//#include <pcre.h>
+#include <regex>
 
 #define TRASHBIN_VERSION "v0.3"
 
@@ -35,15 +35,15 @@
 #define TRASHBIN_SWITCH_HELP         44444
 #define TRASHBIN_SWITCH_VERSION      555555
 
-const wchar_t TRASHBIN_protected_file_regex = "
-
-// Prepares protected directory regex.
-void prepare_protected_regex
+// Protected filename regex.
+/*static std::wregex Protected_Regex = std::wregex( 
+    L"(?:C:)"
+);*/
 
 // Check whether the file name passed belongs to the "protected files",
 // such as the "C:\", C:\Users", and specific user dirs.
 // @return 1 if protected, 0 if deletable.
-int isFileProtected( const wchar_t* fn )
+int is_file_protected( const wchar_t* fn )
 {
     // Linux root 
     if( !wcscmp( st, L"/" ) || !wcsncmp( st, L"/*", 2 ) ) 
@@ -64,7 +64,8 @@ int isFileProtected( const wchar_t* fn )
     return 0; // File's deletable.
 }
 
-int paramType( const wchar_t* st ){
+int get_param_type( const wchar_t* st )
+{
     if( !wcsncmp( st, L"-", 1 ) ) // Argument starts!
     {
         // Check for usable arguments.
@@ -93,76 +94,83 @@ int paramType( const wchar_t* st ){
 
 int wmain(int argc, wchar_t **argv) 
 {
-    size_t ignore_until = 1;
+    bool interactiveMode = false;
+    std::vector<size_t> fileIndexesIncluded;
 
-    /*printf("argc: %d\n\n", argc);
-    for( size_t i = 0; i < argc; i++ ){
-        printf("%d : %d\n", i, wcslen(argv[i]));
+    // Space for all extra Null-terminators.
+    size_t len = argc;  
+    bool currentIsFile = false;
+
+    for (int i = 1; i < argc; i++ ) 
+    {
+        if( !currentIsFile ){
+            // Check the type of param.
+            switch( get_param_type( argv[ i ] ) ){
+            case TRASHBIN_SWITCH_VERSION:
+                printVersion();
+                return 0;
+
+            case TRASHBIN_SWITCH_HELP:
+                printHelp();
+                return 0;
+
+            case TRASHBIN_NEXT_IS_NOT_SWITCH:
+                currentIsFile = true;
+                continue;
+
+            case TRASHBIN_SWITCH_SKIP:
+                continue;
+
+            case TRASHBIN_SWITCH_INTERACTIVE:
+                interactiveMode = true;
+                continue;
+
+            case TRASHBIN_FILE_PARAM:
+            default: 
+                break;
+            }
+        }
+        
+        // Current param is file.
+        len += wcslen( argv[i] );
+
+        fileIndexesIncluded.push_back( i );
     }
 
-    return 0;*/
-
-    if (argc == 1) {
-		puts("Specify at least one path");
-		return 1;
-	}
-
-	if (argc >= 2) {
-		if (wcscmp(argv[1], L"--version") == 0) {
-			puts("1.0.1");
-			return 0;
-		}
-
-		if (wcscmp(argv[1], L"--help") == 0) {
-			puts("\n  Move files and folders to the recycle bin\n\n  Usage: recycle-bin <path> [...]\n\n  Created by Sindre Sorhus");
-			return 0;
-		}
-
-		if ( !wcscmp(argv[1], L"-r") || !wcscmp(argv[1], L"-f") ||
-             !wcscmp(argv[1], L"-fr") || !wcscmp(argv[1], L"-rf") ) 
-        { 
-            ignore_until = 2;
-        }
-	}
-
-    if( argc >= 3 && ignore_until > 1 ){
-        if ( !wcscmp(argv[2], L"-r") || !wcscmp(argv[2], L"-f") ||
-             !wcscmp(argv[2], L"-fr") || !wcscmp(argv[2], L"-rf") ) 
-        { 
-            ignore_until = 3;
-        }
+    // Add every indexed file to the buffer.
+    for( auto it = fileIndexesIncluded.begin(); it != fileIndexesIncluded.end(); ++it ){
+        if( // GO go go go
     }
 
-	size_t len = argc - (ignore_until-1);
+    /*
+    wchar_t *from = malloc(len * sizeof(wchar_t));
 
-	for (int i = ignore_until; i < argc; i++) {
-		len += wcslen(argv[i]);
-	}
+    int pos = 0;
 
-	wchar_t *from = malloc(len * sizeof(wchar_t));
+    for (int i = ignore_until; i < argc; i++) {
+        wcscpy(&from[pos], argv[i]);
+        pos += wcslen(argv[i]) + 1;
+    }
 
-	int pos = 0;
+    from[pos] = '\0';
 
-	for (int i = ignore_until; i < argc; i++) {
-		wcscpy(&from[pos], argv[i]);
-		pos += wcslen(argv[i]) + 1;
-	}
+    assert(++pos == len && "position/length mismatch");
 
-	from[pos] = '\0';
+    SHFILEOPSTRUCTW op;
 
-	assert(++pos == len && "position/length mismatch");
+    op.hwnd = NULL;
+    op.wFunc = FO_DELETE;
+    op.pFrom = from;
+    op.pTo = NULL;
+    op.fFlags = FOF_ALLOWUNDO | FOF_NO_UI;
 
-	SHFILEOPSTRUCTW op;
+    int ret = SHFileOperationW(&op);
 
-	op.hwnd = NULL;
-	op.wFunc = FO_DELETE;
-	op.pFrom = from;
-	op.pTo = NULL;
-	op.fFlags = FOF_ALLOWUNDO | FOF_NO_UI;
+    free(from);
+    */
 
-	int ret = SHFileOperationW(&op);
-
-	free(from);
-
-	return ret;
+    return ret;
 }
+
+
+
