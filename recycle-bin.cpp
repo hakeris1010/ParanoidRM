@@ -124,7 +124,7 @@ int RemoveFiles( const wchar_t* from )
 }
 #endif // TRASHBIN_TEST
 
-int wmain(int argc, wchar_t **argv) 
+int process_recycle(int argc, wchar_t **argv) 
 {
     const bool printIndividualFiles = false;
     const bool printFormatString    = true;
@@ -224,6 +224,20 @@ int wmain(int argc, wchar_t **argv)
     }
 
     return 0;
+}
+
+#ifdef TRASHBIN_TEST
+extern int test_main();
+#endif
+
+// Main function. Calls test if specified.
+int wmain( int argc, wchar_t **argv ) 
+{
+    #ifdef TRASHBIN_TEST
+        return test_main();
+    #else
+        return process_recycle( argc, argv );
+    #endif 
 }
 
 
