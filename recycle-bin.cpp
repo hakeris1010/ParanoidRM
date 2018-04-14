@@ -24,7 +24,7 @@
 #include <cassert>
 #include <vector>
 #include <regex>
-//#include <windows1.h>
+
 
 #define TRASHBIN_VERSION "v0.3"
 
@@ -36,10 +36,24 @@
 #define TRASHBIN_SWITCH_HELP         44444
 #define TRASHBIN_SWITCH_VERSION      555555
 
+#define REGEX_HDD_START  L"(?:(?:(?:/[a-z])|(?:[a-z]:))[/\\\\]*)"
+#define REGEX_HDD_SPECIFIC( let ) L"(?:(?:(?:/" let ")|(?:" let ":))[/\\\\]*)"
+
 // Protected filename regex.
-/*static std::wregex Protected_Regex = std::wregex( 
-    L"(?:C:)"
-);*/
+static const std::wregex Protected_Regex_Match = std::wregex( 
+    L"^(?:"
+    REGEX_HDD_START L"|"
+    L"(?:" REGEX_HDD_START "?Users(?:[/\\\\]+[\\w\\-]*[/\\\\]*)?)|"
+    L"(?:" REGEX_HDD_SPECIFIC( "e" ) "[/\\\\]+[\\w\\-\\.]+[/\\\\]*)"
+    L")$"
+    , std::regex_constants::icase
+);
+
+static const std::wregex Protected_Regex_Search = std::wregex();
+
+// Test case:
+// /r/ r: r:\\ /r foo /r/usersa/ /r/file /r/users /r/users/nyan/haha /e/kaka/
+
 
 void printVersion(){
     std::cout << "Paranoid-RM "<< TRASHBIN_VERSION <<" by Gryllotronics.\n";
@@ -63,17 +77,19 @@ int is_file_protected( const wchar_t* st )
     if( !wcscmp( st, L"/" ) || !wcsncmp( st, L"/*", 2 ) ) 
         return 1;
 
+    // If specific un-protected dirs are getting deletz0red.
+    if( std::regex_match( st, Protected_Regex_Match ) || 
+        std::regex_search( st, Protected_Regex_Search ) )
+        return 1; 
+
     // Windows Disk absolute path. We need to be extra careful when using absolute paths.
-    if( !wcsncmp( st + 1, L":/", 2 ) || !wcsncmp( st + 1, L":\\", 2 ) )
+    /*if( !wcsncmp( st + 1, L":/", 2 ) || !wcsncmp( st + 1, L":\\", 2 ) )
     {
         // If whole disk is being deleted:
         if( !wcscmp( st + 1, L":" ) || !wcscmp( st + 1, L":" ) ||
             !wcscmp( st + 1, L":/" ) || !wcscmp( st + 1, L":\\" ) )
             return 1;
-
-        // If specific un-protected dirs are getting deletz0red.
-        // TODO: Use regex. 
-    }
+    }*/
 
     return 0; // File's deletable.
 }
@@ -105,7 +121,7 @@ int get_param_type( const wchar_t* st )
     // Not argument - file.
     return TRASHBIN_FILE_PARAM;
 }
-
+/*
 // Removes a string of files Win-Style.
 #ifndef TRASHBIN_TEST
 int RemoveFiles( const wchar_t* from )
@@ -123,6 +139,7 @@ int RemoveFiles( const wchar_t* from )
     return SHFileOperationW( &op ); 
 }
 #endif // TRASHBIN_TEST
+*/
 
 int process_recycle(int argc, wchar_t **argv) 
 {
