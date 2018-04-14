@@ -19,11 +19,12 @@
  *                                                                          *
  ***************************************************************************/ 
 
-#include <cstdio>
-#include <windows.h>
+#include <iostream>
+#include <cstring>
 #include <cassert>
 #include <vector>
 #include <regex>
+//#include <windows1.h>
 
 #define TRASHBIN_VERSION "v0.3"
 
@@ -40,10 +41,23 @@
     L"(?:C:)"
 );*/
 
+void printVersion(){
+    std::cout << "Paranoid-RM "<< TRASHBIN_VERSION <<" by Gryllotronics.\n";
+}
+
+void printHelp(){
+    std::cout << "rm [OPTIONS...] [FILES...]\n\nPuts Files to TrashBin instead of"
+              << " perma-deleting them. \nOptions:\n"
+              << " -i, --interactive        Ask before deleting file.\n"
+              << " --version                Print version.\n"
+              << " --help                   Print this help message.\n\n"
+              << "If file starts with a dash \'-\', use \'--\' before.\n\n";
+}
+
 // Check whether the file name passed belongs to the "protected files",
 // such as the "C:\", C:\Users", and specific user dirs.
 // @return 1 if protected, 0 if deletable.
-int is_file_protected( const wchar_t* fn )
+int is_file_protected( const wchar_t* st )
 {
     // Linux root 
     if( !wcscmp( st, L"/" ) || !wcsncmp( st, L"/*", 2 ) ) 
@@ -94,6 +108,11 @@ int get_param_type( const wchar_t* st )
 
 int wmain(int argc, wchar_t **argv) 
 {
+    if( argc == 1 ){
+        printHelp();
+        return 0;
+    }
+
     bool interactiveMode = false;
     std::vector<size_t> fileIndexesIncluded;
 
@@ -130,6 +149,8 @@ int wmain(int argc, wchar_t **argv)
                 break;
             }
         }
+        else 
+            currentIsFile = false;
         
         // Current param is file.
         len += wcslen( argv[i] );
@@ -137,10 +158,43 @@ int wmain(int argc, wchar_t **argv)
         fileIndexesIncluded.push_back( i );
     }
 
+    // Allocate a buffer, and initialize with Zeros.
+    std::vector< wchar_t > buffer( len + argc + 1, 0 );
+    wchar_t* currPtr = &( buffer[0] );
+
     // Add every indexed file to the buffer.
-    for( auto it = fileIndexesIncluded.begin(); it != fileIndexesIncluded.end(); ++it ){
-        if( // GO go go go
+    for( size_t i = 0; i < fileIndexesIncluded.size(); i++ ){
+        const wchar_t* currFile = argv[ fileIndexesIncluded[ i ] ];
+
+        if( interactiveMode ){
+            std::wcout << L"Remove file \""<< currFile << L"\" ?  ";
+            std::string st;
+            std::cin >> st;
+            if( !( st == "y" || st == "Y" || st == "yes" ) ){ // If not "yes", skip this file.
+                continue;
+            }
+        }
+
+        //std::wcout << L"\""<< currFile << L"\" \n";
+
+        // Current file must be deleted - add to buffer.
+        wcscpy( currPtr, currFile );
+        currPtr += wcslen( currFile ) + 1;
     }
+
+    size_t totalLen = (size_t)(currPtr - &buffer[0]);
+    
+    std::wcout << L"\n";
+    for( const wchar_t* it = &buffer[0]; it <= currPtr; ++it ){
+        if( *it == (wchar_t)0x0000 )
+            std::wcout << L"0";
+        std::wcout << *it;
+    }
+    std::wcout << L"\n";
+
+    //std::cout.write( (char*)( &buffer[0] ), totalLen * sizeof(wchar_t) );
+    //std::wcout << L"\n";
+
 
     /*
     wchar_t *from = malloc(len * sizeof(wchar_t));
@@ -169,7 +223,9 @@ int wmain(int argc, wchar_t **argv)
     free(from);
     */
 
-    return ret;
+    //return ret;
+
+    return 0;
 }
 
 
