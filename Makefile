@@ -6,10 +6,15 @@ PROGNAME := trashbin
 PROGRAM  := bin/$(PROGNAME)
 TESTGRAM := bin/test_$(PROGNAME)
 
+PREFIX 	:= /usr/local/bin
+
 SRC 	:= recycle-bin.cpp
 TESTSRC := test.cpp
 
 all: $(PROGRAM)
+
+install: all
+	@install $(PROGRAM) $(PREFIX)
 
 tests: testops $(TESTGRAM)
 testops:
