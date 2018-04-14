@@ -106,8 +106,29 @@ int get_param_type( const wchar_t* st )
     return TRASHBIN_FILE_PARAM;
 }
 
+// Removes a string of files Win-Style.
+#ifndef TRASHBIN_TEST
+int RemoveFiles( const wchar_t* from )
+{
+    SHFILEOPSTRUCTW op;
+
+    op.hwnd = NULL;         // No parent window
+    op.wFunc = FO_DELETE;   // File Operation: Delete
+    op.pFrom = from;        // The Formatted Wide-String containing file names.
+    op.pTo = NULL;          // No result string.
+    op.fFlags = FOF_ALLOWUNDO | FOF_NO_UI;  // Allow Undo: Put file to Recycle-Bin
+                                            // No-UI: Don't throw message boxes on errors.
+
+    // Call the file operation function. Return value is 0 if good, ERRCODE if bad.
+    return SHFileOperationW( &op ); 
+}
+#endif // TRASHBIN_TEST
+
 int wmain(int argc, wchar_t **argv) 
 {
+    const bool printIndividualFiles = false;
+    const bool printFormatString    = true;
+
     if( argc == 1 ){
         printHelp();
         return 0;
@@ -152,10 +173,11 @@ int wmain(int argc, wchar_t **argv)
         else 
             currentIsFile = false;
         
-        // Current param is file.
-        len += wcslen( argv[i] );
-
-        fileIndexesIncluded.push_back( i );
+        // Current param is file. Check if it's not protected.
+        if( !is_file_protected( argv[ i ] ) ){
+            len += wcslen( argv[i] );
+            fileIndexesIncluded.push_back( i );
+        }
     }
 
     // Allocate a buffer, and initialize with Zeros.
@@ -175,55 +197,31 @@ int wmain(int argc, wchar_t **argv)
             }
         }
 
-        //std::wcout << L"\""<< currFile << L"\" \n";
+        if( printIndividualFiles ){
+            std::wcout << L"\""<< currFile << L"\" ";
+            if( interactiveMode )
+                std::wcout << L"\n";
+        }
 
         // Current file must be deleted - add to buffer.
         wcscpy( currPtr, currFile );
         currPtr += wcslen( currFile ) + 1;
     }
 
-    size_t totalLen = (size_t)(currPtr - &buffer[0]);
-    
-    std::wcout << L"\n";
-    for( const wchar_t* it = &buffer[0]; it <= currPtr; ++it ){
-        if( *it == (wchar_t)0x0000 )
-            std::wcout << L"0";
-        std::wcout << *it;
+    // Debugging verbosity
+    if( printFormatString ){    
+        std::wcout << L"\n";
+        for( const wchar_t* it = &buffer[0]; it <= currPtr; ++it ){
+            if( *it == (wchar_t)0x0000 )
+                std::wcout << L"0";
+            std::wcout << *it;
+        }
+        std::wcout << L"\n";
+
+        //size_t totalLen = (size_t)(currPtr - &buffer[0]);
+        //std::cout.write( (char*)( &buffer[0] ), totalLen * sizeof(wchar_t) );
+        //std::wcout << L"\n";
     }
-    std::wcout << L"\n";
-
-    //std::cout.write( (char*)( &buffer[0] ), totalLen * sizeof(wchar_t) );
-    //std::wcout << L"\n";
-
-
-    /*
-    wchar_t *from = malloc(len * sizeof(wchar_t));
-
-    int pos = 0;
-
-    for (int i = ignore_until; i < argc; i++) {
-        wcscpy(&from[pos], argv[i]);
-        pos += wcslen(argv[i]) + 1;
-    }
-
-    from[pos] = '\0';
-
-    assert(++pos == len && "position/length mismatch");
-
-    SHFILEOPSTRUCTW op;
-
-    op.hwnd = NULL;
-    op.wFunc = FO_DELETE;
-    op.pFrom = from;
-    op.pTo = NULL;
-    op.fFlags = FOF_ALLOWUNDO | FOF_NO_UI;
-
-    int ret = SHFileOperationW(&op);
-
-    free(from);
-    */
-
-    //return ret;
 
     return 0;
 }
